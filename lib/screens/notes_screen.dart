@@ -167,7 +167,7 @@ class _NotesScreenState extends State<NotesScreen> {
             ),
           ],
         ),
-        actions: [
+        /*actions: [
           IconButton(
             tooltip: 'Opciones',
             onPressed: () {
@@ -176,7 +176,7 @@ class _NotesScreenState extends State<NotesScreen> {
             icon: const Icon(Icons.more_vert_rounded),
           ),
           const SizedBox(width: 6),
-        ],
+        ],*/
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
