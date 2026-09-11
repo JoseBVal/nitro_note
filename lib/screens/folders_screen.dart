@@ -372,18 +372,25 @@ class _FoldersScreenState extends State<FoldersScreen> {
         toolbarHeight: 72,
         title: Row(
           children: [
-            // Logotipo temporal construido con widgets.
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.bolt_rounded,
-                color: AppColors.nitro,
-                size: 30,
+            // Logotipo oficial de NitroNote.
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                'assets/icon/nitronote_icon.png',
+                width: 42,
+                height: 42,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 42,
+                    height: 42,
+                    color: AppColors.primary,
+                    child: const Icon(
+                      Icons.bolt_rounded,
+                      color: AppColors.nitro,
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),
