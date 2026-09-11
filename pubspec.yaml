@@ -48,6 +48,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -90,3 +91,19 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+# Insercion de iconos para la app
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/nitronote_icon.png"
+  min_sdk_android: 24
+
+  adaptive_icon_background: "#081A45"
+  adaptive_icon_foreground: "assets/icon/nitronote_icon.png"
+  adaptive_icon_foreground_inset: 0
+
+  web:
+    generate: true
+    image_path: "assets/icon/nitronote_icon.png"
+    background_color: "#081A45"
+    theme_color: "#081A45"
