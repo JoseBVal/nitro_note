@@ -20,6 +20,8 @@ class NotesScreen extends StatefulWidget {
 class _NotesScreenState extends State<NotesScreen> {
   final NoteRepository _repository = NoteRepository.instance;
   final TextEditingController _searchController = TextEditingController();
+  // Nodo de enfoque para el campo de búsqueda, útil para manejar el teclado.
+  final FocusNode _searchFocusNode = FocusNode();
 
   String _searchText = '';
   bool _showOnlyFavorites = false;
@@ -52,6 +54,13 @@ class _NotesScreenState extends State<NotesScreen> {
 
     // Escuchamos los cambios del repositorio.
     _repository.addListener(_refreshScreen);
+    // Desenfoca el campo de búsqueda después de que se construya la pantalla, evitando que el teclado aparezca automáticamente.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _searchFocusNode.unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
+    });
   }
 
   /// Actualiza la interfaz cuando cambia alguna nota.
@@ -65,6 +74,7 @@ class _NotesScreenState extends State<NotesScreen> {
   void dispose() {
     _repository.removeListener(_refreshScreen);
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -176,6 +186,17 @@ class _NotesScreenState extends State<NotesScreen> {
             // Buscador de notas.
             TextField(
               controller: _searchController,
+              focusNode: _searchFocusNode,
+              autofocus: false,
+              textInputAction: TextInputAction.search,
+
+              onTapOutside: (event) {
+                _searchFocusNode.unfocus();
+              },
+
+              onSubmitted: (value) {
+                _searchFocusNode.unfocus();
+              },
               onChanged: (value) {
                 setState(() {
                   _searchText = value;
@@ -263,6 +284,7 @@ class _NotesScreenState extends State<NotesScreen> {
 
   /// Abre el editor vacío para crear una nota.
   Future<void> _createNote() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final result = await Navigator.push<NoteEditorResult>(
       context,
       MaterialPageRoute(
@@ -283,6 +305,7 @@ class _NotesScreenState extends State<NotesScreen> {
 
   /// Abre la pantalla de visualización de una nota.
   Future<void> _openNoteDetail(NoteModel note) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final wasDeleted = await Navigator.push<bool>(
       context,
       MaterialPageRoute(

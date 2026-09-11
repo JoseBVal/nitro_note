@@ -27,6 +27,9 @@ class _FoldersScreenState extends State<FoldersScreen> {
   // Controlador del campo de búsqueda.
   final TextEditingController _searchController = TextEditingController();
 
+  // Nodo de enfoque para el campo de búsqueda, útil para manejar el teclado.
+  final FocusNode _searchFocusNode = FocusNode();
+
   String _searchText = '';
 
   /// Devuelve solamente las carpetas que coinciden con la búsqueda.
@@ -47,6 +50,14 @@ class _FoldersScreenState extends State<FoldersScreen> {
   void initState() {
     super.initState();
     _repository.addListener(_refreshScreen);
+
+    // Desenfoca el campo de búsqueda después de que se construya la pantalla, evitando que el teclado aparezca automáticamente.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _searchFocusNode.unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
+    });
   }
 
   /// Reconstruye la pantalla cuando cambian las carpetas o notas.
@@ -61,11 +72,15 @@ class _FoldersScreenState extends State<FoldersScreen> {
   void dispose() {
     _repository.removeListener(_refreshScreen);
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
   /// Abre la pantalla que contiene las notas de una carpeta.
   void _openFolder(FolderModel folder) {
+    // Desenfoca el campo de búsqueda para que el teclado se cierre al abrir la pantalla de notas.
+    FocusManager.instance.primaryFocus?.unfocus();
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -78,6 +93,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
 
   /// Abre el formulario inferior para crear o editar una carpeta.
   Future<void> _openFolderForm({FolderModel? folder}) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final nameController = TextEditingController(text: folder?.name ?? '');
 
     IconData selectedIcon = folder?.icon ?? Icons.folder_rounded;
@@ -413,6 +429,17 @@ class _FoldersScreenState extends State<FoldersScreen> {
             // Buscador general de carpetas.
             TextField(
               controller: _searchController,
+              focusNode: _searchFocusNode,
+              autofocus: false,
+              textInputAction: TextInputAction.search,
+
+              onTapOutside: (event) {
+                _searchFocusNode.unfocus();
+              },
+              // Quita el foco al presionar Buscar en el teclado, evitando que el teclado se quede abierto.
+              onSubmitted: (value) {
+                _searchFocusNode.unfocus();
+              },
               onChanged: (value) {
                 setState(() {
                   _searchText = value;
