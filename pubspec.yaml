@@ -100,7 +100,7 @@ flutter_launcher_icons:
 
   adaptive_icon_background: "#081A45"
   adaptive_icon_foreground: "assets/icon/nitronote_icon.png"
-  adaptive_icon_foreground_inset: 0
+  adaptive_icon_foreground_inset: 8
 
   web:
     generate: true
