@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -13,7 +14,6 @@ import '../models/note_model.dart';
 /// con los mismos datos. Más adelante agregaremos almacenamiento local.
 class NoteRepository extends ChangeNotifier {
   /// Constructor privado.
-  ///
   /// Impide que diferentes pantallas creen repositorios separados.
   NoteRepository._();
 
@@ -298,6 +298,8 @@ class NoteRepository extends ChangeNotifier {
     required String content,
     bool isFavorite = false,
     List<String> imageData = const [],
+    String? audioPath,
+    int? audioDurationMs,
   }) {
     final now = DateTime.now();
 
@@ -310,6 +312,8 @@ class NoteRepository extends ChangeNotifier {
       updatedAt: now,
       isFavorite: isFavorite,
       imageData: imageData,
+      audioPath: audioPath,
+      audioDurationMs: audioDurationMs,
     );
 
     _notes.add(note);
@@ -328,7 +332,11 @@ class NoteRepository extends ChangeNotifier {
       return;
     }
 
+    final previousAudioPath = _notes[index].audioPath;
     _notes[index] = updatedNote.copyWith(updatedAt: DateTime.now());
+    if (previousAudioPath != null && previousAudioPath != updatedNote.audioPath) {
+      unawaited(File(previousAudioPath).delete().catchError((_) => File(previousAudioPath)));
+    }
 
     _saveAndNotify();
   }
@@ -355,9 +363,15 @@ class NoteRepository extends ChangeNotifier {
 
   /// Elimina una nota mediante su identificador.
   void deleteNote(String noteId) {
+    final note = findNoteById(noteId);
+    final audioPath = note?.audioPath;
     _notes.removeWhere((note) {
       return note.id == noteId;
     });
+
+    if (audioPath != null) {
+      unawaited(File(audioPath).delete().catchError((_) => File(audioPath)));
+    }
 
     _saveAndNotify();
   }

@@ -1,4 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +42,12 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
   late final TextEditingController _contentController;
 
   bool _isFavorite = false;
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  String? _audioPath;
+  int? _audioDurationMs;
+  bool _isRecording = false;
+  DateTime? _recordingStarted;
 
   /// Indica si estamos editando una nota existente.
   bool get _isEditing {
@@ -57,6 +67,8 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
 
     _isFavorite = widget.note?.isFavorite ?? false;
     _imageData.addAll(widget.note?.imageData ?? const []);
+    _audioPath = widget.note?.audioPath;
+    _audioDurationMs = widget.note?.audioDurationMs;
   }
 
   @override
@@ -64,7 +76,44 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     // Liberamos los controladores cuando se cierra la pantalla.
     _titleController.dispose();
     _contentController.dispose();
+    _audioRecorder.dispose();
+    _audioPlayer.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleRecording() async {
+    try {
+      if (_isRecording) {
+        final path = await _audioRecorder.stop();
+        if (path != null && mounted) {
+          setState(() {
+            _audioPath = path;
+            _audioDurationMs = DateTime.now().difference(_recordingStarted!).inMilliseconds;
+            _isRecording = false;
+          });
+        }
+        return;
+      }
+      if (!await _audioRecorder.hasPermission()) {
+        _showMessage('Se necesita permiso para usar el micrófono');
+        return;
+      }
+      final directory = await getApplicationDocumentsDirectory();
+      final audioDirectory = Directory('${directory.path}/audio_notes');
+      await audioDirectory.create(recursive: true);
+      final path = '${audioDirectory.path}/${DateTime.now().microsecondsSinceEpoch}.m4a';
+      await _audioRecorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+      if (mounted) setState(() { _recordingStarted = DateTime.now(); _isRecording = true; });
+    } catch (_) {
+      if (mounted) _showMessage('No se pudo grabar el audio');
+    }
+  }
+
+  Future<void> _removeAudio() async {
+    await _audioPlayer.stop();
+    final path = _audioPath;
+    if (path != null) await File(path).delete().catchError((_) => File(path));
+    if (mounted) setState(() { _audioPath = null; _audioDurationMs = null; });
   }
 
   /// Muestra las opciones disponibles para agregar una imagen.
@@ -200,6 +249,9 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         content: content,
         isFavorite: _isFavorite,
         imageData: List<String>.from(_imageData),
+        audioPath: _audioPath,
+        audioDurationMs: _audioDurationMs,
+        clearAudio: _audioPath == null,
       );
 
       _repository.updateNote(updatedNote);
@@ -210,6 +262,8 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         content: content,
         isFavorite: _isFavorite,
         imageData: List<String>.from(_imageData),
+        audioPath: _audioPath,
+        audioDurationMs: _audioDurationMs,
       );
     }
 
@@ -423,6 +477,18 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 22),
+
+                Text('Nota de audio', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                Row(children: [
+                  FilledButton.icon(onPressed: _toggleRecording, icon: Icon(_isRecording ? Icons.stop : Icons.mic), label: Text(_isRecording ? 'Detener grabación' : 'Grabar audio')),
+                  if (_audioPath != null) ...[
+                    IconButton(tooltip: 'Reproducir audio', onPressed: () async { await _audioPlayer.play(DeviceFileSource(_audioPath!)); }, icon: const Icon(Icons.play_arrow)),
+                    IconButton(tooltip: 'Eliminar audio', onPressed: _removeAudio, icon: const Icon(Icons.delete_outline)),
+                    Text('${((_audioDurationMs ?? 0) / 1000).round()} s'),
+                  ],
+                ]),
                 const SizedBox(height: 22),
 
                 // Sección para administrar las imágenes.

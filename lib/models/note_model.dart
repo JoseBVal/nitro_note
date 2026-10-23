@@ -10,6 +10,8 @@ class NoteModel {
 
   // Imágenes convertidas a texto Base64.
   final List<String> imageData;
+  final String? audioPath;
+  final int? audioDurationMs;
 
   const NoteModel({
     required this.id,
@@ -20,6 +22,8 @@ class NoteModel {
     required this.updatedAt,
     this.isFavorite = false,
     this.imageData = const [],
+    this.audioPath,
+    this.audioDurationMs,
   });
 
   /// Indica si la nota tiene al menos una imagen.
@@ -46,6 +50,9 @@ class NoteModel {
     DateTime? updatedAt,
     bool? isFavorite,
     List<String>? imageData,
+    String? audioPath,
+    int? audioDurationMs,
+    bool clearAudio = false,
   }) {
     return NoteModel(
       id: id,
@@ -56,6 +63,8 @@ class NoteModel {
       updatedAt: updatedAt ?? this.updatedAt,
       isFavorite: isFavorite ?? this.isFavorite,
       imageData: imageData ?? this.imageData,
+      audioPath: clearAudio ? null : (audioPath ?? this.audioPath),
+      audioDurationMs: clearAudio ? null : (audioDurationMs ?? this.audioDurationMs),
     );
   }
 
@@ -70,6 +79,8 @@ class NoteModel {
       'updatedAt': updatedAt.toIso8601String(),
       'isFavorite': isFavorite,
       'imageData': imageData,
+      'audioPath': audioPath,
+      'audioDurationMs': audioDurationMs,
     };
   }
 
@@ -84,6 +95,8 @@ class NoteModel {
       updatedAt: DateTime.parse(map['updatedAt'] as String),
       isFavorite: map['isFavorite'] as bool? ?? false,
       imageData: List<String>.from(map['imageData'] as List? ?? []),
+      audioPath: map['audioPath'] as String?,
+      audioDurationMs: map['audioDurationMs'] as int?,
     );
   }
 }

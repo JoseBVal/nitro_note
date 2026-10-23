@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'dart:convert';
+import 'dart:io';
+import 'package:audioplayers/audioplayers.dart';
 
 import '../core/theme/app_theme.dart';
 import '../data/note_repository.dart';
@@ -21,6 +23,8 @@ class NoteDetailScreen extends StatefulWidget {
 
 class _NoteDetailScreenState extends State<NoteDetailScreen> {
   final NoteRepository _repository = NoteRepository.instance;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _audioPlaying = false;
 
   /// Obtiene siempre la versión más reciente de la nota.
   NoteModel? get _note {
@@ -33,6 +37,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
 
     // Escuchamos cambios como edición o favorito.
     _repository.addListener(_refreshScreen);
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) setState(() => _audioPlaying = state == PlayerState.playing);
+    });
   }
 
   /// Reconstruye la pantalla cuando cambia la nota.
@@ -45,6 +52,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   @override
   void dispose() {
     _repository.removeListener(_refreshScreen);
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -357,6 +365,23 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                 ),
               ),
             ),
+
+            if (note.audioPath != null && File(note.audioPath!).existsSync()) ...[
+              const SizedBox(height: 22),
+              Text('Nota de audio', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              Card(child: ListTile(
+                leading: IconButton(
+                  tooltip: _audioPlaying ? 'Pausar audio' : 'Reproducir audio',
+                  icon: Icon(_audioPlaying ? Icons.pause_circle : Icons.play_circle),
+                  onPressed: () async {
+                    if (_audioPlaying) { await _audioPlayer.pause(); }
+                    else { await _audioPlayer.play(DeviceFileSource(note.audioPath!)); }
+                  },
+                ),
+                title: const Text('Grabación adjunta'),
+                subtitle: Text('${((note.audioDurationMs ?? 0) / 1000).round()} segundos'),
+              )),
+            ],
 
             // En el siguiente paso aparecerán aquí las imágenes.
             if (note.hasImages) ...[
